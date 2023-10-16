@@ -1,0 +1,54 @@
+---
+- name: "Set up GitHub Runner Image"
+  hosts: default
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.package:
+        name: [nodejs, python3, bash, gcc, make, git, docker.io]
+        state: present
+    - name: Create "runner" user
+      ansible.builtin.user:
+        name: runner
+        append: true
+        groups: [adm, docker]
+        shell: /usr/sbin/nologin
+    - name: Create "actions-runner" directory
+      ansible.builtin.file:
+        path: /home/runner/actions-runner
+        state: directory
+        owner: runner
+        group: runner
+        mode: "0755"
+    - name: Download and unarchive runner
+      ansible.builtin.unarchive:
+        src: "{{ runner_tarball_url }}"
+        dest: /home/runner/actions-runner
+        owner: runner
+        group: runner
+        remote_src: true
+    - name: Copy systemd unit
+      ansible.builtin.copy:
+        src: github-runner.service
+        dest: /etc/systemd/system/github-runner.service
+        owner: root
+        group: root
+    - name: Copy start script
+      ansible.builtin.copy:
+        src: start-runner.sh
+        dest: /home/runner/start-runner.sh
+        owner: runner
+        group: runner
+        mode: "0755"
+    - name: Put runner labels
+      ansible.builtin.lineinfile:
+        path: /home/runner/runner_labels
+        create: true
+        line: "{{ runner_labels }}"
+        owner: runner
+        group: runner
+    - name: Enable GitHub Runner service
+      ansible.builtin.service:
+        name: github-runner
+        enabled: true

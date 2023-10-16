@@ -1,0 +1,12 @@
+#/etc/systemd/system/github-runner.service
+
+[Unit]
+Description=GitHub Runner
+
+[Service]
+User=runner
+Type=oneshot
+ExecStart=/home/runner/start-runner.sh
+
+[Install]
+WantedBy=multi-user.target
