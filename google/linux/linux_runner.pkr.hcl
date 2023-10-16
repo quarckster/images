@@ -18,7 +18,7 @@ variable "project_id" {
 
 variable "source_image" {
     type = string
-    default = "debian-12-bookworm-v20231010"
+    default = "ubuntu-2204-jammy-v20230919"
     description = "Image where runner will be installed"
 }
 
@@ -35,12 +35,12 @@ variable "account_file" {
 variable "image_name" {
     type = string
     description = "Resulting image name"
-    default = "linux-runner"
+    default = "ubuntu-latest"
 }
 
 variable "runner_labels" {
     type = string
-    default = "debian,debian12,linux-x86_64"
+    default = "ubuntu-latest,ubuntu-22.04,linux-x86_64"
     description = "Label that will be assigned to the runner during registration"
 }
 

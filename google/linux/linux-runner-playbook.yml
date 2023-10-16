@@ -4,9 +4,12 @@
   become: true
   gather_facts: false
   tasks:
-    - name: Install prerequisites
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+    - name: Install packages
       ansible.builtin.package:
-        name: [nodejs, python3, bash, gcc, make, git, docker.io]
+        name: [gcc, make, git, nodejs, docker.io]
         state: present
     - name: Create "runner" user
       ansible.builtin.user:
