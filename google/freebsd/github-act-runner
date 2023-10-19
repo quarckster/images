@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# PROVIDE: githubactrunner
+# REQUIRE: LOGIN
+# KEYWORD:
+
+. /etc/rc.subr
+
+name="githubactrunner"
+rcvar="githubactrunner_enable"
+githubactrunner_user="runner"
+githubactrunner_command="/home/runner/start-runner.sh"
+pidfile="/home/runner/${name}.pid"
+command="/usr/sbin/daemon"
+command_args="-S -P ${pidfile} ${githubactrunner_command}"
+
+load_rc_config $name
+: ${githubactrunner_enable:=no}
+
+run_rc_command "$1"
