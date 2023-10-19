@@ -3,20 +3,22 @@
   hosts: default
   become: true
   gather_facts: false
+  vars:
+    ansible_remote_tmp: /tmp
   tasks:
-    - name: Update package cache
-      ansible.builtin.apt:
-        update_cache: yes
     - name: Install packages
       ansible.builtin.package:
-        name: [gcc, make, git, nodejs, docker.io]
+        name: [node, git, gtar, bash, gcc]
         state: present
     - name: Create "runner" user
       ansible.builtin.user:
         name: runner
-        append: true
-        groups: [adm, docker]
-        shell: /usr/sbin/nologin
+    - name: Add "runner" to sudoers
+      community.general.sudoers:
+        name: runner
+        user: runner
+        commands: ALL
+        sudoers_path: /usr/local/etc/sudoers.d/
     - name: Create "actions-runner" directory
       ansible.builtin.file:
         path: /home/runner/actions-runner
@@ -25,21 +27,24 @@
         group: runner
         mode: "0755"
     - name: Download and unarchive runner
+      register: archive
       ansible.builtin.unarchive:
         src: "{{ runner_tarball_url }}"
-        dest: /home/runner/actions-runner
+        dest: /home/runner/actions-runner/
         owner: runner
         group: runner
-        remote_src: true
-    - name: Copy systemd unit
+        remote_src: yes
+    - name: Copy rc.d script
+      register: service_script
       ansible.builtin.copy:
-        src: github-runner.service
-        dest: /etc/systemd/system/github-runner.service
+        src: github-act-runner
+        dest: /etc/rc.d/github-act-runner
         owner: root
-        group: root
+        group: wheel
+        mode: "0755"
     - name: Copy start script
       ansible.builtin.copy:
-        src: start-runner.sh
+        src: ../start-runner.sh
         dest: /home/runner/start-runner.sh
         owner: runner
         group: runner
@@ -51,7 +56,7 @@
         line: "{{ runner_labels }}"
         owner: runner
         group: runner
-    - name: Enable GitHub Runner service
-      ansible.builtin.service:
-        name: github-runner
-        enabled: true
+    - name: Enable github runner
+      ansible.builtin.lineinfile:
+        path: /etc/rc.conf
+        line: githubactrunner_enable="YES"
