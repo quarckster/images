@@ -11,5 +11,6 @@ Example command to build a self-hosted runner VM image in Google Cloud:
 packer build -var project_id=<PROJECT ID> \
              -var zone=<ZONE> \
              -var account_file=<PATH TO ACCOUNT FILE> \
-             google/linux/linux_runner.pkr.hcl
+             -var os=<OS>
+             google/runner.pkr.hcl
 ```
