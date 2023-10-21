@@ -44,7 +44,7 @@
         group: root
     - name: Copy start script
       ansible.builtin.copy:
-        src: ../start-runner.sh
+        src: "{{ start_script }}"
         dest: /home/runner/start-runner.sh
         owner: runner
         group: runner
