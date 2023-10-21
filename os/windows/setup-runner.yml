@@ -1,0 +1,53 @@
+---
+- name: "Set up GitHub Runner Image"
+  hosts: default
+  gather_facts: false
+  vars:
+    ansible_remote_tmp: C:\Windows\Temp
+    ansible_user: packer
+    ansible_winrm_transport: basic
+    ansible_connection: winrm
+    ansible_winrm_server_cert_validation: ignore
+  tasks:
+    - name: Install packages
+      chocolatey.chocolatey.win_chocolatey:
+        name: [git, nodejs]
+        state: present
+    - name: Create "actions-runner" directory
+      ansible.windows.win_file:
+        path: C:\actions-runner
+        state: directory
+    - name: Put runner labels
+      community.windows.win_lineinfile:
+        path: C:\actions-runner\runner_labels
+        create: true
+        line: "{{ runner_labels }}"
+    - name: Download actions runner
+      ansible.windows.win_get_url:
+        url: "{{ runner_tarball_url }}"
+        dest: C:\actions-runner\actions-runner.zip
+    - name: Unzip runner
+      community.windows.win_unzip:
+        src: C:\actions-runner\actions-runner.zip
+        dest: C:\actions-runner\
+        delete_archive: true
+    - name: Copy start script
+      ansible.windows.win_copy:
+        src: "{{ start_script }}"
+        dest: C:\actions-runner\start-runner.ps1
+    - name: Schedule Runner on boot
+      community.windows.win_scheduled_task:
+        name: Runner
+        description: Run Actions Runner
+        actions:
+          - path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+            arguments: -ExecutionPolicy Unrestricted -NonInteractive -File C:\actions-runner\start-runner.ps1
+        triggers:
+          - type: boot
+        username: NETWORK SERVICE
+        run_level: highest
+        state: present
+    - name: Disable WinRM
+      ansible.windows.win_service:
+        name: WinRM
+        start_mode: disabled
