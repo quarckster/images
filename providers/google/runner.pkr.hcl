@@ -13,6 +13,10 @@ packer {
 
 variable "os" {
     type = string
+    validation {
+      condition = contains(["ubuntu", "ubuntu-arm64", "freebsd", "windows"], var.os)
+      error_message = "Not supported OS."
+  }
 }
 
 variable "project_id" {
@@ -34,12 +38,29 @@ local "ubuntu" {
   expression = {
     source_image = "ubuntu-2204-jammy-v20230919"
     runner_labels = "ubuntu-latest,ubuntu-22.04,linux-x86_64"
-    runner_tarball_url = "https://github.com/actions/runner/releases/download/v2.309.0/actions-runner-linux-x64-2.309.0.tar.gz"
+    runner_tarball_url = "https://github.com/actions/runner/releases/download/v2.310.2/actions-runner-linux-x64-2.310.2.tar.gz"
     disk_size = 20
     communicator = "ssh"
     use_proxy = true
     start_script = "${abspath(path.root)}/start-runner.sh"
     metadata = {}
+    arch = "x86-64"
+    machine_type = "e2-standard-2"
+  }
+}
+
+local "ubuntu-arm64" {
+  expression = {
+    source_image = "ubuntu-2204-jammy-arm64-v20230919"
+    runner_labels = "ubuntu-arm64-latest,ubuntu-arm64-22.04,linux-arm64"
+    runner_tarball_url = "https://github.com/actions/runner/releases/download/v2.310.2/actions-runner-linux-arm64-2.310.2.tar.gz"
+    disk_size = 20
+    communicator = "ssh"
+    use_proxy = true
+    start_script = "${abspath(path.root)}/start-runner.sh"
+    metadata = {}
+    arch = "arm64"
+    machine_type = "t2a-standard-2"
   }
 }
 
@@ -53,6 +74,8 @@ local "freebsd" {
     use_proxy = true
     start_script = "${abspath(path.root)}/start-runner.sh"
     metadata = {}
+    arch = "x86-64"
+    machine_type = "e2-standard-2"
   }
 }
 
@@ -68,6 +91,8 @@ local "windows" {
     metadata = {
       "sysprep-specialize-script-ps1" = "Set-Item -Path WSMan:\\localhost\\Service\\Auth\\Basic -Value $true"
     }
+    arch = "x86-64"
+    machine_type = "e2-standard-2"
   }
 }
 
@@ -80,6 +105,9 @@ locals {
   communicator = lookup(local, var.os, "").communicator
   use_proxy = lookup(local, var.os, "").use_proxy
   start_script = lookup(local, var.os, "").start_script
+  arch = lookup(local, var.os, "").arch
+  os = split("-", var.os)[0]
+  machine_type = lookup(local, var.os, "").machine_type
 }
 
 local "datetime" {
@@ -91,7 +119,7 @@ source "googlecompute" "runner" {
   project_id = var.project_id
   zone = var.zone
   source_image = local.source_image
-  image_name = "${var.os}-${local.datetime}"
+  image_name = "${local.os}-${local.arch}-${local.datetime}"
   disk_size = local.disk_size
   communicator = local.communicator
   use_os_login = true
@@ -100,12 +128,13 @@ source "googlecompute" "runner" {
   winrm_use_ssl = true
   winrm_insecure = true
   metadata = local.metadata
+  machine_type = local.machine_type
 }
 
 build {
   sources = ["sources.googlecompute.runner"]
   provisioner "ansible" {
-      playbook_file = "${abspath(path.root)}/../../os/${var.os}/setup-runner.yml"
+      playbook_file = "${abspath(path.root)}/../../os/${local.os}/setup-runner.yml"
       use_proxy = local.use_proxy
       extra_arguments = [ 
             "-e", 
