@@ -105,7 +105,7 @@ source "googlecompute" "runner" {
 build {
   sources = ["sources.googlecompute.runner"]
   provisioner "ansible" {
-      playbook_file = "${path.root}/../../os/${var.os}/setup-runner.yml"
+      playbook_file = "${abspath(path.root)}/../../os/${var.os}/setup-runner.yml"
       use_proxy = local.use_proxy
       extra_arguments = [ 
             "-e", 
